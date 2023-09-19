@@ -1,85 +1,26 @@
 import sys
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Set, Tuple
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, \
     QLayout, QLineEdit, QSplitter, QFrame, QGridLayout, QPlainTextEdit, QTableView
 
-
-class Observable:
-    def __init__(self, value):
-        self.value = value
-        self.subscribers = set()
-
-    def set_value(self, value):
-        self.value = value
-        self.notify_subscribers()
-
-    def notify_subscribers(self):
-        for sub in self.subscribers:
-            sub.value_update(self.value)
-
-    def subscribe(self, observer):
-        self.subscribers.add(observer)
-
-    def unsubscribe(self, observer):
-        self.subscribers.remove(observer)
-
-    def map(self, mapping):
-        return MappedValue(self, mapping)
-
-    def __iadd__(self, other):
-        self.set_value(self.value + other)
-        return self
-
-    def __isub__(self, other):
-        self.set_value(self.value - other)
-        return self
-
-class Observer:
-    def __init__(self, observable: Optional[Observable]):
-        self.observable = observable
-        if observable is not None:
-            self.observable.subscribe(self)
-        self.update_callbacks = []
-
-    def on_update(self, callback):
-        self.update_callbacks.append(callback)
-
-    def value_update(self, value):
-        for callback in self.update_callbacks:
-            callback(value)
-
-    def __del__(self):
-        if self.observable is not None:
-            self.observable.unsubscribe(self)
-
-
-class MappedValue(Observer, Observable):
-    def __init__(self, observable: Observable, mapping):
-        super(MappedValue, self).__init__(observable=observable)    # 1. super class constructor (Observer)
-        Observable.__init__(self, value=mapping(observable.value))  # 2. super class constructor (Observable)
-        self.mapping = mapping
-
-        def on_update(value):
-            self.set_value(self.mapping(value))
-
-        self.on_update(on_update)
+from src.value import Observer, Value
 
 
 class Label(QLabel, Observer):
     def __init__(
             self,
             parent: QWidget,
-            value: Union[Observable, str],
+            value: Union[Value, str],
             min_width: int = None,
             max_width: int = None
     ):
-        if isinstance(value, Observable):
-            super(Label, self).__init__(observable=value)
+        if isinstance(value, Value):
+            super(Label, self).__init__(observables=[value])
             self.setText(value.value)
         else:
-            super(Label, self).__init__(observable=None)
+            super(Label, self).__init__(observables=[])
             self.setText(value)
         self.setParent(parent)
         self.on_update(self.setText)
@@ -95,17 +36,17 @@ class Button(QPushButton, Observer):
     def __init__(
             self,
             parent: QWidget,
-            value: Union[Observable, str],
+            value: Union[Value, str],
             on_click=None,
             min_width: int = None,
             max_width: int = None
     ):
-        if isinstance(value, Observable):
-            super(Button, self).__init__(observable=value)
+        if isinstance(value, Value):
+            super(Button, self).__init__(observables=[value])
             self.setText(value.value)
             self.on_update(self.setText)
         else:
-            super(Button, self).__init__(observable=None)
+            super(Button, self).__init__(observables=[])
             self.setText(value)
         self.setParent(parent)
 
@@ -123,14 +64,14 @@ class Input(QLineEdit, Observer):
     def __init__(
             self,
             parent: QWidget,
-            binding: Observable,
+            binding: Value,
             min_width: int = None,
             max_width: int = None
     ):
-        super(Input, self).__init__(observable=binding)
+        super(Input, self).__init__(observables=[binding])
         self.setParent(parent)
-        self.setText(binding.value)
-        self.textEdited.connect(binding.set_value)
+        self.setText(binding.data)
+        self.textEdited.connect(binding.set_data)
         self.on_update(self.setText)
 
         if min_width is not None:
@@ -220,11 +161,11 @@ class Splitter(QSplitter):
 class ViewModel:
     def __setattr__(self, key, value):
         if key in self.__dict__:
-            if isinstance(value, Observable):
-                value = value.value
-            self.__dict__[key].set_value(value)
+            if isinstance(value, Value):
+                value = value.data
+            self.__dict__[key].set_data(value)
         else:
-            self.__dict__[key] = Observable(value)
+            self.__dict__[key] = Value(value)
 
 class View(QWidget):
     def __init__(self):

@@ -229,12 +229,14 @@ class View(QWidget):
 class MainView(View):
     def __init__(self):
         super(MainView, self).__init__()
-        self.model.count = 0
         self.model.receiver = ""
         self.model.subject = ""
         self.model.email_text = ""
 
-        preview_enabled = self.model.email_text.map(len) > 0
+        receiver_not_empty = self.model.receiver.map(lambda s: len(s.strip())) > 0
+        subject_not_empty = self.model.subject.map(lambda s: len(s.strip())) > 0
+        preview_enabled = self.model.email_text.map(lambda s: len(s.strip())) > 0
+
 
         self.setLayout(Column([
             Splitter(
@@ -264,7 +266,12 @@ class MainView(View):
                         (Row([
                             (Button(self, "Einstellungen", min_width=100), 0),
                             Spacer(1),
-                            (Button(self, "Alle senden", min_width=100), 0),
+                            (Button(
+                                self,
+                                "Alle senden",
+                                enabled=receiver_not_empty & subject_not_empty & preview_enabled,
+                                min_width=100,
+                            ), 0),
                         ]), 0)
                     ])
                 ]

@@ -123,6 +123,9 @@ class Value:
     def __invert__(self):
         return self.map(lambda x: not x)
 
+    def eq(self, other):
+        return self.__generic_operation__(other, lambda a, b: a == b)
+
 
 class Observer:
     def __init__(self, observables: Union[List[Value], Set[Value], Tuple[Value]]):

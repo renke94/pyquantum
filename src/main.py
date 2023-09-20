@@ -237,7 +237,6 @@ class MainView(View):
         subject_not_empty = self.model.subject.map(lambda s: len(s.strip())) > 0
         preview_enabled = self.model.email_text.map(lambda s: len(s.strip())) > 0
 
-
         self.setLayout(Column([
             Splitter(
                 parent = self,

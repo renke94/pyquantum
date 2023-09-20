@@ -3,27 +3,34 @@ from typing import List, Optional, Union, Set, Tuple
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, \
-    QLayout, QLineEdit, QSplitter, QFrame, QGridLayout, QPlainTextEdit, QTableView
+    QLayout, QLineEdit, QSplitter, QFrame, QGridLayout, QPlainTextEdit, QTableView, QTextEdit
 
 from src.value import Observer, Value
 
 
-class Label(QLabel, Observer):
+class Label(QLabel):
     def __init__(
             self,
             parent: QWidget,
             value: Union[Value, str],
+            enabled: Union[Value, bool] = True,
             min_width: int = None,
             max_width: int = None
     ):
+        super(Label, self).__init__(parent=parent)
         if isinstance(value, Value):
-            super(Label, self).__init__(observables=[value])
-            self.setText(value.value)
+            self.setText(value.data)
+            self._value_observer = Observer([value])
+            self._value_observer.on_update(self.setText)
         else:
-            super(Label, self).__init__(observables=[])
             self.setText(value)
-        self.setParent(parent)
-        self.on_update(self.setText)
+
+        if isinstance(enabled, Value):
+            self.setEnabled(enabled.data)
+            self._enabled_observer = Observer([enabled])
+            self._enabled_observer.on_update(self.setEnabled)
+        else:
+            self.setEnabled(enabled)
 
         if min_width is not None:
             self.setMinimumWidth(min_width)
@@ -32,23 +39,31 @@ class Label(QLabel, Observer):
             self.setMaximumWidth(max_width)
 
 
-class Button(QPushButton, Observer):
+class Button(QPushButton):
     def __init__(
             self,
             parent: QWidget,
             value: Union[Value, str],
             on_click=None,
+            enabled: Union[Value, bool] = True,
             min_width: int = None,
             max_width: int = None
     ):
+        super(Button, self).__init__(parent=parent)
+
         if isinstance(value, Value):
-            super(Button, self).__init__(observables=[value])
-            self.setText(value.value)
-            self.on_update(self.setText)
+            self.setText(value.data)
+            self._text_observer = Observer([value])
+            self._text_observer.on_update(self.setText)
         else:
-            super(Button, self).__init__(observables=[])
             self.setText(value)
-        self.setParent(parent)
+
+        if isinstance(enabled, Value):
+            self.setEnabled(enabled.data)
+            self._enabled_observer = Observer([enabled])
+            self._enabled_observer.on_update(self.setEnabled)
+        else:
+            self.setEnabled(enabled)
 
         if on_click is not None:
             self.clicked.connect(on_click)
@@ -60,19 +75,57 @@ class Button(QPushButton, Observer):
             self.setMaximumWidth(max_width)
 
 
-class Input(QLineEdit, Observer):
+class Input(QLineEdit):
     def __init__(
             self,
             parent: QWidget,
             binding: Value,
+            enabled: Union[Value, bool] = True,
             min_width: int = None,
             max_width: int = None
     ):
-        super(Input, self).__init__(observables=[binding])
-        self.setParent(parent)
+        super(Input, self).__init__(parent=parent)
         self.setText(binding.data)
         self.textEdited.connect(binding.set_data)
-        self.on_update(self.setText)
+        self._binding_observer = Observer([binding])
+        self._binding_observer.on_update(self.setText)
+
+        if isinstance(enabled, Value):
+            self.setEnabled(enabled.data)
+            self._enabled_observer = Observer([enabled])
+            self._enabled_observer.on_update(self.setEnabled)
+        else:
+            self.setEnabled(enabled)
+
+        if min_width is not None:
+            self.setMinimumWidth(min_width)
+
+        if max_width is not None:
+            self.setMaximumWidth(max_width)
+
+
+class MultiLineInput(QPlainTextEdit):
+    def __init__(
+            self,
+            parent: QWidget,
+            binding: Value,
+            enabled: Union[Value, bool] = True,
+            min_width: int = None,
+            max_width: int = None,
+    ):
+        super(MultiLineInput, self).__init__(parent=parent)
+        self.setPlainText(binding.data)
+        def set_data():
+            binding.set_data(self.toPlainText())
+
+        self.textChanged.connect(set_data)
+
+        if isinstance(enabled, Value):
+            self.setEnabled(enabled.data)
+            self._enabled_observer = Observer([enabled])
+            self._enabled_observer.on_update(self.setEnabled)
+        else:
+            self.setEnabled(enabled)
 
         if min_width is not None:
             self.setMinimumWidth(min_width)
@@ -179,15 +232,9 @@ class MainView(View):
         self.model.count = 0
         self.model.receiver = ""
         self.model.subject = ""
+        self.model.email_text = ""
 
-        def increment():
-            self.model.text = "Hallo"
-            self.model.count += 1
-
-        def decrement():
-            self.model.count -= 1
-
-        count_str = self.model.count.map(lambda x: f"clicked {x} times")
+        preview_enabled = self.model.email_text.map(len) > 0
 
         self.setLayout(Column([
             Splitter(
@@ -211,9 +258,9 @@ class MainView(View):
                         (Row([
                             (Label(self, "Email Text"), 0),
                             Spacer(1),
-                            (Button(self, "Vorschau", min_width=100), 0)
+                            (Button(self, "Vorschau", min_width=100, enabled=preview_enabled), 0)
                         ]), 0),
-                        (QPlainTextEdit(parent=self), 1),
+                        (MultiLineInput(self, self.model.email_text), 1),
                         (Row([
                             (Button(self, "Einstellungen", min_width=100), 0),
                             Spacer(1),

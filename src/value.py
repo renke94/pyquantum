@@ -10,9 +10,15 @@ class Value:
             publisher.subscribe(self)
         self.update_callbacks = []
 
+    @property
+    def dtype(self):
+        return type(self.data)
+
     def set_data(self, data: any):
+        is_different = self.data != data
         self.data = data
-        self.notify_subscribers()
+        if is_different:
+            self.notify_subscribers()
 
     def subscribe(self, value):
         self.subscribers.add(value)
@@ -36,7 +42,7 @@ class Value:
             publisher.unsubscribe(self)
 
     def __repr__(self):
-        return f"Value({self.data})"
+        return f"Value({self.data}, dtype={self.dtype})"
 
     def map(self, function):
         out = Value(function(self.data), _children=(self,))

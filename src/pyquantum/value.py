@@ -97,13 +97,13 @@ class Value:
         return self.map(lambda x: -x)
 
     def __and__(self, other):
-        return self.__generic_operation__(other, lambda a, b: a and b)
+        return self.__generic_operation__(other, lambda a, b: a & b)
 
     def __rand__(self, other):
         return self & other
 
     def __or__(self, other):
-        return self.__generic_operation__(other, lambda a, b: a or b)
+        return self.__generic_operation__(other, lambda a, b: a | b)
 
     def __ror__(self, other):
         return self | other
@@ -121,7 +121,7 @@ class Value:
         return self.__generic_operation__(other, lambda a, b: a >= b)
 
     def __invert__(self):
-        return self.map(lambda x: not x)
+        return self.map(lambda x: (not x) if isinstance(x, bool) else ~x)
 
     def eq(self, other):
         return self.__generic_operation__(other, lambda a, b: a == b)

@@ -1,234 +1,14 @@
 import sys
-from typing import List, Optional, Union, Set, Tuple
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, \
-    QLayout, QLineEdit, QSplitter, QFrame, QGridLayout, QPlainTextEdit, QTableView, QTextEdit
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTableView
 
-from src.value import Observer, Value
-
-
-class Label(QLabel):
-    def __init__(
-            self,
-            parent: QWidget,
-            value: Union[Value, str],
-            enabled: Union[Value, bool] = True,
-            min_width: int = None,
-            max_width: int = None
-    ):
-        super(Label, self).__init__(parent=parent)
-        if isinstance(value, Value):
-            self.setText(value.data)
-            self._value_observer = Observer([value])
-            self._value_observer.on_update(self.setText)
-        else:
-            self.setText(value)
-
-        if isinstance(enabled, Value):
-            self.setEnabled(enabled.data)
-            self._enabled_observer = Observer([enabled])
-            self._enabled_observer.on_update(self.setEnabled)
-        else:
-            self.setEnabled(enabled)
-
-        if min_width is not None:
-            self.setMinimumWidth(min_width)
-
-        if max_width is not None:
-            self.setMaximumWidth(max_width)
-
-
-class Button(QPushButton):
-    def __init__(
-            self,
-            parent: QWidget,
-            value: Union[Value, str],
-            on_click=None,
-            enabled: Union[Value, bool] = True,
-            min_width: int = None,
-            max_width: int = None
-    ):
-        super(Button, self).__init__(parent=parent)
-
-        if isinstance(value, Value):
-            self.setText(value.data)
-            self._text_observer = Observer([value])
-            self._text_observer.on_update(self.setText)
-        else:
-            self.setText(value)
-
-        if isinstance(enabled, Value):
-            self.setEnabled(enabled.data)
-            self._enabled_observer = Observer([enabled])
-            self._enabled_observer.on_update(self.setEnabled)
-        else:
-            self.setEnabled(enabled)
-
-        if on_click is not None:
-            self.clicked.connect(on_click)
-
-        if min_width is not None:
-            self.setMinimumWidth(min_width)
-
-        if max_width is not None:
-            self.setMaximumWidth(max_width)
-
-
-class Input(QLineEdit):
-    def __init__(
-            self,
-            parent: QWidget,
-            binding: Value,
-            enabled: Union[Value, bool] = True,
-            min_width: int = None,
-            max_width: int = None
-    ):
-        super(Input, self).__init__(parent=parent)
-        self.setText(binding.data)
-        self.textEdited.connect(binding.set_data)
-        self._binding_observer = Observer([binding])
-        self._binding_observer.on_update(self.setText)
-
-        if isinstance(enabled, Value):
-            self.setEnabled(enabled.data)
-            self._enabled_observer = Observer([enabled])
-            self._enabled_observer.on_update(self.setEnabled)
-        else:
-            self.setEnabled(enabled)
-
-        if min_width is not None:
-            self.setMinimumWidth(min_width)
-
-        if max_width is not None:
-            self.setMaximumWidth(max_width)
-
-
-class MultiLineInput(QPlainTextEdit):
-    def __init__(
-            self,
-            parent: QWidget,
-            binding: Value,
-            enabled: Union[Value, bool] = True,
-            min_width: int = None,
-            max_width: int = None,
-    ):
-        super(MultiLineInput, self).__init__(parent=parent)
-        self.setPlainText(binding.data)
-        def set_data():
-            binding.set_data(self.toPlainText())
-
-        self.textChanged.connect(set_data)
-
-        if isinstance(enabled, Value):
-            self.setEnabled(enabled.data)
-            self._enabled_observer = Observer([enabled])
-            self._enabled_observer.on_update(self.setEnabled)
-        else:
-            self.setEnabled(enabled)
-
-        if min_width is not None:
-            self.setMinimumWidth(min_width)
-
-        if max_width is not None:
-            self.setMaximumWidth(max_width)
-
-
-class Row(QHBoxLayout):
-    def __init__(self, children: List = []):
-        super(QHBoxLayout, self).__init__()
-        for child in children:
-            if isinstance(child, (tuple, list)):
-                child, stretch = child
-            else:
-                child, stretch = child, 1
-
-            if isinstance(child, QWidget):
-                self.addWidget(child, stretch)
-            elif isinstance(child, QLayout):
-                self.addLayout(child, stretch)
-            elif isinstance(child, Spacer):
-                self.addStretch(child.stretch)
-
-
-class Column(QVBoxLayout):
-    def __init__(self, children: List = []):
-        super(QVBoxLayout, self).__init__()
-        for child in children:
-            if isinstance(child, (tuple, list)):
-                child, stretch = child
-            else:
-                child, stretch = child, 1
-
-            if isinstance(child, QWidget):
-                self.addWidget(child, stretch)
-            elif isinstance(child, QLayout):
-                self.addLayout(child, stretch)
-            elif isinstance(child, Spacer):
-                self.addStretch(child.stretch)
-
-
-class GridLayout(QGridLayout):
-    def __init__(self, children: List = []):
-        super(GridLayout, self).__init__()
-        for child, row, column in children:
-            self.addWidget(child, row, column)
-
-
-class Spacer:
-    def __init__(self, stretch: int):
-        self.stretch = stretch
-
-class Splitter(QSplitter):
-    def __init__(
-            self,
-            parent: Optional[QWidget] = None,
-            orientation: str = 'horizontal',
-            children: List = []
-    ):
-        if orientation == 'horizontal':
-            orientation = Qt.Orientation.Horizontal
-        elif orientation == 'vertical':
-            orientation = Qt.Orientation.Vertical
-        else:
-            raise ValueError("Orientation must be either 'horizontal' or 'vertical'")
-
-        super(Splitter, self).__init__(orientation=orientation, parent=parent)
-
-        for i, child in enumerate(children):
-            if isinstance(child, (tuple, list)):
-                child, stretch = child
-            else:
-                child, stretch = child, 1
-
-            if isinstance(child, QLayout):
-                frame = QFrame()
-                frame.setLayout(child)
-                child = frame
-
-            self.addWidget(child)
-            self.setStretchFactor(i, stretch)
-
-
-
-class ViewModel:
-    def __setattr__(self, key, value):
-        if key in self.__dict__:
-            if isinstance(value, Value):
-                value = value.data
-            self.__dict__[key].set_data(value)
-        else:
-            self.__dict__[key] = Value(value)
-
-class View(QWidget):
-    def __init__(self):
-        super(View, self).__init__()
-        self.model = ViewModel()
+from pyquantum.ui import *
 
 
 class MainView(View):
     def __init__(self):
         super(MainView, self).__init__()
+        self.model.path = None
         self.model.receiver = ""
         self.model.subject = ""
         self.model.email_text = ""
@@ -237,6 +17,15 @@ class MainView(View):
         subject_not_empty = self.model.subject.map(lambda s: len(s.strip())) > 0
         preview_enabled = self.model.email_text.map(lambda s: len(s.strip())) > 0
 
+        path_alt_string = "Keine Datei ausgewählt"
+        path_string = self.model.path.map(lambda p: path_alt_string if p is None else str(p))
+
+        def open_file_dialog():
+            path = FileDialog.save_file(self, "Test")
+            if path is None:
+                return
+            self.model.path = path
+
         self.setLayout(Column([
             Splitter(
                 parent = self,
@@ -244,8 +33,8 @@ class MainView(View):
                 children = [
                     Column([
                         (Row([
-                            (Button(self, "Datei auswählen"), 0),
-                            (Label(self, "keine Datei ausgewählt"), 1)
+                            (Button(self, "Datei auswählen", on_click=open_file_dialog), 0),
+                            (Label(self, path_string), 1)
                         ]), 0),
                         (QTableView(self), 1),
                     ]),
@@ -282,7 +71,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.resize(1280, 900)
-        self.setWindowTitle("PyQt Compose")
+        self.setWindowTitle("PyQuantum")
 
         widget = MainView()
         self.setCentralWidget(widget)

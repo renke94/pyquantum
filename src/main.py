@@ -32,35 +32,36 @@ class MainView(View):
                 orientation = 'vertical',
                 children = [
                     Column([
-                        (Row([
-                            (Button(self, "Datei auswählen", on_click=open_file_dialog), 0),
-                            (Label(self, path_string), 1)
-                        ]), 0),
+                        Row([
+                            Button(self, "Datei auswählen", on_click=open_file_dialog, stretch=0),
+                            Label(self, path_string, stretch=1)
+                        ], stretch=0),
                         (QTableView(self), 1),
                     ]),
                     Column([
-                        (GridLayout([
+                        GridLayout([
                             (Label(self, "An:", max_width=100), 0, 0),
                             (Input(self, self.model.receiver), 0, 1),
                             (Label(self, "Betreff:", max_width=100), 1, 0),
                             (Input(self, self.model.subject), 1, 1),
-                        ]), 0),
-                        (Row([
-                            (Label(self, "Email Text"), 0),
+                        ], stretch=0),
+                        Row([
+                            Label(self, "Email Text", stretch=0),
                             Spacer(1),
-                            (Button(self, "Vorschau", min_width=100, enabled=preview_enabled), 0)
-                        ]), 0),
-                        (MultiLineInput(self, self.model.email_text), 1),
-                        (Row([
-                            (Button(self, "Einstellungen", min_width=100), 0),
+                            Button(self, "Vorschau", min_width=100, enabled=preview_enabled, stretch=0),
+                        ], stretch=0),
+                        MultiLineInput(self, self.model.email_text, stretch=1),
+                        Row([
+                            Button(self, "Einstellungen", min_width=100, stretch=0),
                             Spacer(1),
-                            (Button(
+                            Button(
                                 self,
                                 "Alle senden",
                                 enabled=receiver_not_empty & subject_not_empty & preview_enabled,
                                 min_width=100,
-                            ), 0),
-                        ]), 0)
+                                stretch=0,
+                            ),
+                        ], stretch=0)
                     ])
                 ]
             )

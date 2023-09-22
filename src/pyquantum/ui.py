@@ -16,6 +16,7 @@ class Label(QLabel):
             enabled: Union[Value, bool] = True,
             min_width: int = None,
             max_width: int = None,
+            stretch: int = 0
     ):
         super(Label, self).__init__(parent=parent)
         if isinstance(value, Value):
@@ -38,6 +39,8 @@ class Label(QLabel):
         if max_width is not None:
             self.setMaximumWidth(max_width)
 
+        self._stretch = stretch
+
 
 class Button(QPushButton):
     def __init__(
@@ -47,7 +50,8 @@ class Button(QPushButton):
             on_click=None,
             enabled: Union[Value, bool] = True,
             min_width: int = None,
-            max_width: int = None
+            max_width: int = None,
+            stretch: int = 0,
     ):
         super(Button, self).__init__(parent=parent)
 
@@ -74,6 +78,8 @@ class Button(QPushButton):
         if max_width is not None:
             self.setMaximumWidth(max_width)
 
+        self._stretch = stretch
+
 
 class Input(QLineEdit):
     def __init__(
@@ -82,7 +88,8 @@ class Input(QLineEdit):
             binding: Value,
             enabled: Union[Value, bool] = True,
             min_width: int = None,
-            max_width: int = None
+            max_width: int = None,
+            stretch: int = 0,
     ):
         super(Input, self).__init__(parent=parent)
         self.setText(binding.data)
@@ -103,6 +110,8 @@ class Input(QLineEdit):
         if max_width is not None:
             self.setMaximumWidth(max_width)
 
+        self._stretch = stretch
+
 
 class MultiLineInput(QPlainTextEdit):
     def __init__(
@@ -112,6 +121,7 @@ class MultiLineInput(QPlainTextEdit):
             enabled: Union[Value, bool] = True,
             min_width: int = None,
             max_width: int = None,
+            stretch: int = 0,
     ):
         super(MultiLineInput, self).__init__(parent=parent)
         self.setPlainText(binding.data)
@@ -133,52 +143,63 @@ class MultiLineInput(QPlainTextEdit):
         if max_width is not None:
             self.setMaximumWidth(max_width)
 
+        self._stretch = stretch
+
 
 class Row(QHBoxLayout):
-    def __init__(self, children: List = []):
+    def __init__(self, children: List = [], stretch: int = 0):
         super(QHBoxLayout, self).__init__()
-        # TODO(Add _stretch variable to each new class and check here if attribute exists - else: 0)
         for child in children:
             if isinstance(child, (tuple, list)):
-                child, stretch = child
+                child, _stretch = child
             else:
-                child, stretch = child, 1
+                child, _stretch = child, 1
+
+            _stretch = child._stretch if hasattr(child, '_stretch') else _stretch
 
             if isinstance(child, QWidget):
-                self.addWidget(child, stretch)
+                self.addWidget(child, _stretch)
             elif isinstance(child, QLayout):
-                self.addLayout(child, stretch)
+                self.addLayout(child, _stretch)
             elif isinstance(child, Spacer):
-                self.addStretch(child.stretch)
+                self.addStretch(_stretch)
+
+        self._stretch = stretch
 
 
 class Column(QVBoxLayout):
-    def __init__(self, children: List = []):
+    def __init__(self, children: List = [], stretch: int = 0):
         super(QVBoxLayout, self).__init__()
         for child in children:
             if isinstance(child, (tuple, list)):
-                child, stretch = child
+                child, _stretch = child
             else:
-                child, stretch = child, 1
+                child, _stretch = child, 1
+
+            _stretch = child._stretch if hasattr(child, '_stretch') else _stretch
 
             if isinstance(child, QWidget):
-                self.addWidget(child, stretch)
+                self.addWidget(child, _stretch)
             elif isinstance(child, QLayout):
-                self.addLayout(child, stretch)
+                self.addLayout(child, _stretch)
             elif isinstance(child, Spacer):
-                self.addStretch(child.stretch)
+                self.addStretch(child._stretch)
+
+        self._stretch = stretch
 
 
 class GridLayout(QGridLayout):
-    def __init__(self, children: List = []):
+    def __init__(self, children: List = [], stretch: int = 0):
         super(GridLayout, self).__init__()
         for child, row, column in children:
             self.addWidget(child, row, column)
 
+        self._stretch = stretch
+
 
 class Spacer:
     def __init__(self, stretch: int):
-        self.stretch = stretch
+        self._stretch = stretch
 
 
 class Splitter(QSplitter):
@@ -186,7 +207,8 @@ class Splitter(QSplitter):
             self,
             parent: Optional[QWidget] = None,
             orientation: str = 'horizontal',
-            children: List = []
+            children: List = [],
+            stretch: int = 0,
     ):
         if orientation == 'horizontal':
             orientation = Qt.Orientation.Horizontal
@@ -210,6 +232,8 @@ class Splitter(QSplitter):
 
             self.addWidget(child)
             self.setStretchFactor(i, stretch)
+
+        self._stretch = stretch
 
 
 class ViewModel:

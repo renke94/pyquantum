@@ -8,6 +8,8 @@ This package provides wrapper classes around PyQt, bringing enhanced functionali
 
 ## Examples
 
+![](images/simple_example.gif)
+
 ```python
 import sys
 

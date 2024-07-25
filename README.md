@@ -8,7 +8,7 @@ This package provides wrapper classes around PyQt, bringing enhanced functionali
 
 ## Examples
 
-'''python
+```python
 import sys
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox
@@ -60,5 +60,4 @@ if __name__ == '__main__':
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
-
-'''
+```
